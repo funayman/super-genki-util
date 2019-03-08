@@ -118,70 +118,6 @@ public class FuriganaView extends View {
     this.furiganaPaint.setTextSize(baseTextSize / 2.0f);
   }
 
-  // Text functions
-  private void setText(String text, int startHighlight, int endHighlight, boolean isInternal) {
-
-    // Linesize
-    normalHeight = normalTextPaint.descent() - normalTextPaint.ascent();
-    furiganaHeight = furiganaPaint.descent() - furiganaPaint.ascent();
-    lineSize = normalHeight + furiganaHeight;
-
-    // Clear spans
-    spanVector.clear();
-
-    // Sizes
-    lineSize = furiganaPaint.getFontSpacing() + Math
-        .max(normalTextPaint.getFontSpacing(), highlightTextPaint.getFontSpacing());
-
-    // Spannify text
-    while (text.length() > 0) {
-      int idx = text.indexOf('{');
-      if (idx >= 0) {
-        // Prefix string
-        if (idx > 0) {
-          // Spans
-          spanVector.add(new Span("", text.substring(0, idx), startHighlight, endHighlight));
-
-          // Remove text
-          text = text.substring(idx);
-          startHighlight -= idx;
-          endHighlight -= idx;
-        }
-
-        // End bracket
-        idx = text.indexOf('}');
-        if (idx < 1) {
-          // Error
-          text = "";
-          break;
-        } else if (idx == 1) {
-          // Empty bracket
-          text = text.substring(2);
-          continue;
-        }
-
-        // Spans
-        String[] split = text.substring(1, idx).split(";");
-        spanVector.add(
-            new Span(((split.length > 1) ? split[1] : ""), split[0], startHighlight, endHighlight));
-
-        // Remove text
-        text = text.substring(idx + 1);
-        startHighlight -= split[0].length();
-        endHighlight -= split[0].length();
-
-      } else {
-        // Single span
-        spanVector.add(new Span("", text, startHighlight, endHighlight));
-        text = "";
-      }
-    }
-
-    // Invalidate view
-    this.invalidate();
-    this.requestLayout();
-  }
-
   private void calculateText(float lineMaxValue) {
     // Clear lines
     lineNormalVector.clear();
@@ -370,9 +306,71 @@ public class FuriganaView extends View {
   }
 
   public void setText(String text, int startHighlight, int endHighlight) {
-    this.setText(text, startHighlight, endHighlight, Boolean.FALSE);
+    this.internalSetText(text, startHighlight, endHighlight);
   }
 
+  private void internalSetText(String text, int startHighlight, int endHighlight) {
+
+    // Linesize
+    normalHeight = normalTextPaint.descent() - normalTextPaint.ascent();
+    furiganaHeight = furiganaPaint.descent() - furiganaPaint.ascent();
+    lineSize = normalHeight + furiganaHeight;
+
+    // Clear spans
+    spanVector.clear();
+
+    // Sizes
+    lineSize = furiganaPaint.getFontSpacing() + Math
+        .max(normalTextPaint.getFontSpacing(), highlightTextPaint.getFontSpacing());
+
+    // Spannify text
+    while (text.length() > 0) {
+      int idx = text.indexOf('{');
+      if (idx >= 0) {
+        // Prefix string
+        if (idx > 0) {
+          // Spans
+          spanVector.add(new Span("", text.substring(0, idx), startHighlight, endHighlight));
+
+          // Remove text
+          text = text.substring(idx);
+          startHighlight -= idx;
+          endHighlight -= idx;
+        }
+
+        // End bracket
+        idx = text.indexOf('}');
+        if (idx < 1) {
+          // Error
+          text = "";
+          break;
+        } else if (idx == 1) {
+          // Empty bracket
+          text = text.substring(2);
+          continue;
+        }
+
+        // Spans
+        String[] split = text.substring(1, idx).split(";");
+        spanVector.add(
+            new Span(((split.length > 1) ? split[1] : ""), split[0], startHighlight, endHighlight));
+
+        // Remove text
+        text = text.substring(idx + 1);
+        startHighlight -= split[0].length();
+        endHighlight -= split[0].length();
+
+      } else {
+        // Single span
+        spanVector.add(new Span("", text, startHighlight, endHighlight));
+        text = "";
+      }
+    }
+
+    // Invalidate view
+    this.invalidate();
+    this.requestLayout();
+  }
   // private classes
   class TextFurigana {
 
