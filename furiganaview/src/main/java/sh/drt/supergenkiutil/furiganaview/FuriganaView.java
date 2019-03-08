@@ -32,10 +32,10 @@ public class FuriganaView extends View {
   private TextPaint highlightTextPaint;
 
   // Sizes
-  private float lineSize;
-  private float normalHeight;
-  private float furiganaHeight;
-  private float lineMax;
+  private float lineSize = 0.0f;
+  private float normalHeight = 0.0f;
+  private float furiganaHeight = 0.0f;
+  private float lineMax = 0.0f;
 
   // Spans and lines
   private Vector<Span> spanVector = new Vector<>();
@@ -86,6 +86,7 @@ public class FuriganaView extends View {
 
   public void setBaseColor(int baseColor) {
     this.baseColor = baseColor;
+    this.normalTextPaint.setColor(baseColor);
   }
 
   public int getHighlightColor() {
@@ -94,6 +95,7 @@ public class FuriganaView extends View {
 
   public void setHighlightColor(int highlightColor) {
     this.highlightColor = highlightColor;
+    this.highlightTextPaint.setColor(highlightColor);
   }
 
   public int getFuriganaColor() {
@@ -102,6 +104,7 @@ public class FuriganaView extends View {
 
   public void setFuriganaColor(int furiganaColor) {
     this.furiganaColor = furiganaColor;
+    this.furiganaPaint.setColor(furiganaColor);
   }
 
   public float getBaseTextSize() {
@@ -110,10 +113,13 @@ public class FuriganaView extends View {
 
   public void setBaseTextSize(float baseTextSize) {
     this.baseTextSize = baseTextSize;
+    this.normalTextPaint.setTextSize(baseTextSize);
+    this.highlightTextPaint.setTextSize(baseTextSize);
+    this.furiganaPaint.setTextSize(baseTextSize/2.0f);
   }
 
   // Text functions
-  private void calculateAndSetText(String text, int startHightlight, int endHightlight) {
+  private void setText(String text, int startHighlight, int endHighlight, boolean isInternal) {
 
     // Linesize
     normalHeight = normalTextPaint.descent() - normalTextPaint.ascent();
@@ -134,12 +140,12 @@ public class FuriganaView extends View {
         // Prefix string
         if (idx > 0) {
           // Spans
-          spanVector.add(new Span("", text.substring(0, idx), startHightlight, endHightlight));
+          spanVector.add(new Span("", text.substring(0, idx), startHighlight, endHighlight));
 
           // Remove text
           text = text.substring(idx);
-          startHightlight -= idx;
-          endHightlight -= idx;
+          startHighlight -= idx;
+          endHighlight -= idx;
         }
 
         // End bracket
@@ -156,16 +162,16 @@ public class FuriganaView extends View {
 
         // Spans
         String[] split = text.substring(1, idx).split(";");
-        spanVector.add(new Span(((split.length > 1) ? split[1] : ""), split[0], startHightlight, endHightlight));
+        spanVector.add(new Span(((split.length > 1) ? split[1] : ""), split[0], startHighlight, endHighlight));
 
         // Remove text
         text = text.substring(idx + 1);
-        startHightlight -= split[0].length();
-        endHightlight -= split[0].length();
+        startHighlight -= split[0].length();
+        endHighlight -= split[0].length();
 
       } else {
         // Single span
-        spanVector.add(new Span("", text, startHightlight, endHightlight));
+        spanVector.add(new Span("", text, startHighlight, endHighlight));
         text = "";
       }
     }
@@ -175,7 +181,7 @@ public class FuriganaView extends View {
     this.requestLayout();
   }
 
-  private void calculateText(float lineMax) {
+  private void calculateText(float line_max) {
     // Clear lines
     lineNormalVector.clear();
     lineFuriganaVector.clear();
@@ -184,17 +190,17 @@ public class FuriganaView extends View {
     lineMax = 0.0f;
 
     // Check if no limits on width
-    if (lineMax < 0.0) {
+    if (line_max < 0.0) {
 
       // Create single normal and furigana line
-      LineNormal lineNormal = new LineNormal();
-      LineFurigana lineFurigana = new LineFurigana();
+      LineNormal line_n = new LineNormal();
+      LineFurigana line_f = new LineFurigana();
 
       // Loop spans
       for (Span span : spanVector) {
         // Text
-        lineNormal.add(span.normal());
-        lineFurigana.add(span.furigana(lineMax));
+        line_n.add(span.normal());
+        line_f.add(span.furigana(lineMax));
 
         // Widths update
         for (float width : span.widths()) {
@@ -203,35 +209,35 @@ public class FuriganaView extends View {
       }
 
       // Commit both lines
-      lineNormalVector.add(lineNormal);
-      lineFuriganaVector.add(lineFurigana);
+      lineNormalVector.add(line_n);
+      lineFuriganaVector.add(line_f);
 
     } else {
 
       // Lines
-      float linex = 0.0f;
-      LineNormal lineNormal = new LineNormal();
-      LineFurigana lineFurigana = new LineFurigana();
+      float line_x = 0.0f;
+      LineNormal line_n = new LineNormal();
+      LineFurigana line_f = new LineFurigana();
 
       // Initial span
-      int spani = 0;
+      int span_i = 0;
 
       Span span = null;
       if (spanVector.size() != 0) {
-        span = spanVector.get(spani);
+        span = spanVector.get(span_i);
       }
 
       // Iterate
       while (span != null) {
         // Start offset
-        float lines = linex;
+        float line_s = line_x;
 
         // Calculate possible line size
         Vector<Float> widths = span.widths();
         int i = 0;
         for (i = 0; i < widths.size(); i++) {
-          if (linex + widths.get(i) <= lineMax) {
-            linex += widths.get(i);
+          if (line_x + widths.get(i) <= line_max) {
+            line_x += widths.get(i);
           } else {
             break;
           }
@@ -243,24 +249,24 @@ public class FuriganaView extends View {
           // Span does not fit entirely
           if (i > 0) {
             // Split half that fits
-            Vector<TextNormal> normalA = new Vector<>();
-            Vector<TextNormal> normalB = new Vector<>();
-            span.split(i, normalA, normalB);
-            lineNormal.add(normalA);
-            span = new Span(normalB);
+            Vector<TextNormal> normal_a = new Vector<>();
+            Vector<TextNormal> normal_b = new Vector<>();
+            span.split(i, normal_a, normal_b);
+            line_n.add(normal_a);
+            span = new Span(normal_b);
           }
 
           // Add new line with current spans
-          if (lineNormal.size() != 0) {
+          if (line_n.size() != 0) {
             // Add
-            lineMax = (lineMax > linex ? lineMax : linex);
-            lineNormalVector.add(lineNormal);
-            lineFuriganaVector.add(lineFurigana);
+            lineMax = (lineMax > line_x ? lineMax : line_x);
+            lineNormalVector.add(line_n);
+            lineFuriganaVector.add(line_f);
 
             // Reset
-            lineNormal = new LineNormal();
-            lineFurigana = new LineFurigana();
-            linex = 0.0f;
+            line_n = new LineNormal();
+            line_f = new LineFurigana();
+            line_x = 0.0f;
 
             // Next span
             continue;
@@ -269,25 +275,25 @@ public class FuriganaView extends View {
         } else {
 
           // Span fits entirely
-          lineNormal.add(span.normal());
-          lineFurigana.add(span.furigana(lines));
+          line_n.add(span.normal());
+          line_f.add(span.furigana(line_s));
 
         }
 
         // Next span
         span = null;
-        spani++;
-        if (spani < spanVector.size()) {
-          span = spanVector.get(spani);
+        span_i++;
+        if (span_i < spanVector.size()) {
+          span = spanVector.get(span_i);
         }
       }
 
       // Last span
-      if (lineNormal.size() != 0) {
+      if (line_n.size() != 0) {
         // Add
-        lineMax = (lineMax > linex ? lineMax : linex);
-        lineNormalVector.add(lineNormal);
-        lineFuriganaVector.add(lineFurigana);
+        lineMax = (lineMax > line_x ? lineMax : line_x);
+        lineNormalVector.add(line_n);
+        lineFuriganaVector.add(line_f);
       }
     }
 
@@ -359,155 +365,155 @@ public class FuriganaView extends View {
 
   // Public Functions
   public void setText(String text) {
-    this.calculateAndSetText(text, 0, 0);
+    this.setText(text, 0, 0);
   }
 
   public void setText(String text, int startHighlight, int endHighlight) {
-    this.calculateAndSetText(text, startHighlight, endHighlight);
+    this.setText(text, startHighlight, endHighlight, Boolean.FALSE);
   }
 
   // private classes
   class TextFurigana {
 
     // Info
-    private String mainText;
+    private String m_text;
 
     // Coordinates
-    float offset;
-    float width;
+    float m_offset;
+    float m_width;
 
     // Constructor
-    TextFurigana(String mainText) {
+    TextFurigana(String text) {
       // Info
-      this.mainText = mainText;
+      m_text = text;
 
       // Coordinates
-      width = furiganaPaint.measureText(mainText);
+      m_width = furiganaPaint.measureText(m_text);
     }
 
     // Info
-    //private String text() { return mainText; }
+    //private String text() { return m_text; }
 
     // Coordinates
-    float getOffset() {
-      return offset;
+    float offset_get() {
+      return m_offset;
     }
 
-    void setOffset(float value) {
-      offset = value;
+    void offset_set(float value) {
+      m_offset = value;
     }
 
     float width() {
-      return width;
+      return m_width;
     }
 
     // Draw
     void draw(Canvas canvas, float x, float y) {
-      x -= width / 2.0f;
+      x -= m_width / 2.0f;
       if (x < 0) {
         x = 0;
-      } else if (x + width > canvas.getWidth()) {
-        x = canvas.getWidth() - width;
+      } else if (x + m_width > canvas.getWidth()) {
+        x = canvas.getWidth() - m_width;
       }
-      canvas.drawText(mainText, 0, mainText.length(), x, y, furiganaPaint);
+      canvas.drawText(m_text, 0, m_text.length(), x, y, furiganaPaint);
     }
   }
 
   class TextNormal {
 
     // Info
-    private String mainText;
-    private boolean isMarked;
+    private String m_text;
+    private boolean m_is_marked;
 
     // Widths
-    private float widthTotal;
-    private float[] widthChars;
+    private float m_width_total;
+    private float[] m_width_chars;
 
     // Constructor
-    TextNormal(String text, boolean isMarked) {
+    TextNormal(String text, boolean is_marked) {
       // Info
-      mainText = text;
-      isMarked = isMarked;
+      m_text = text;
+      m_is_marked = is_marked;
 
       // Character widths
-      widthChars = new float[mainText.length()];
-      if (isMarked) {
-        highlightTextPaint.getTextWidths(mainText, widthChars);
+      m_width_chars = new float[m_text.length()];
+      if (m_is_marked) {
+        highlightTextPaint.getTextWidths(m_text, m_width_chars);
       } else {
-        normalTextPaint.getTextWidths(mainText, widthChars);
+        normalTextPaint.getTextWidths(m_text, m_width_chars);
       }
 
       // Total width
-      widthTotal = 0.0f;
-      for (float v : widthChars) {
-        widthTotal += v;
+      m_width_total = 0.0f;
+      for (float v : m_width_chars) {
+        m_width_total += v;
       }
     }
 
     // Info
     int length() {
-      return mainText.length();
+      return m_text.length();
     }
 
     // Widths
-    float[] getWidthChars() {
-      return widthChars;
+    float[] width_chars() {
+      return m_width_chars;
     }
 
     // Split
     TextNormal[] split(int offset) {
       return new TextNormal[]{
-          new TextNormal(mainText.substring(0, offset), isMarked),
-          new TextNormal(mainText.substring(offset), isMarked)
+          new TextNormal(m_text.substring(0, offset), m_is_marked),
+          new TextNormal(m_text.substring(offset), m_is_marked)
       };
     }
 
     // Draw
     float draw(Canvas canvas, float x, float y) {
-      if (isMarked) {
-        canvas.drawText(mainText, 0, mainText.length(), x, y, highlightTextPaint);
+      if (m_is_marked) {
+        canvas.drawText(m_text, 0, m_text.length(), x, y, highlightTextPaint);
       } else {
-        canvas.drawText(mainText, 0, mainText.length(), x, y, normalTextPaint);
+        canvas.drawText(m_text, 0, m_text.length(), x, y, normalTextPaint);
       }
-      return widthTotal;
+      return m_width_total;
     }
   }
 
   class LineFurigana {
 
     // Text
-    private Vector<TextFurigana> mainText = new Vector<>();
-    private Vector<Float> offset = new Vector<>();
+    private Vector<TextFurigana> m_text = new Vector<>();
+    private Vector<Float> m_offset = new Vector<>();
 
     // Add
     void add(TextFurigana text) {
       if (text != null) {
-        mainText.add(text);
+        m_text.add(text);
       }
     }
 
     // Calculate
     void calculate() {
       // Check size
-      if (mainText.size() == 0) {
+      if (m_text.size() == 0) {
         return;
       }
 
             /*
             // Debug
             String str = "";
-            for (TextFurigana text : mainText)
+            for (TextFurigana text : m_text)
                 str += "'" + text.text() + "' ";
             */
 
       // r[] - ideal offsets
-      float[] r = new float[mainText.size()];
-      for (int i = 0; i < mainText.size(); i++) {
-        r[i] = mainText.get(i).getOffset();
+      float[] r = new float[m_text.size()];
+      for (int i = 0; i < m_text.size(); i++) {
+        r[i] = m_text.get(i).offset_get();
       }
 
       // a[] - constraint matrix
-      float[][] a = new float[mainText.size() + 1][mainText.size()];
+      float[][] a = new float[m_text.size() + 1][m_text.size()];
       for (int i = 0; i < a.length; i++) {
         for (int j = 0; j < a[0].length; j++) {
           a[i][j] = 0.0f;
@@ -521,38 +527,38 @@ public class FuriganaView extends View {
       a[a.length - 1][a[0].length - 1] = -1.0f;
 
       // b[] - constraint vector
-      float[] b = new float[mainText.size() + 1];
-      b[0] = -r[0] + (0.5f * mainText.get(0).width());
+      float[] b = new float[m_text.size() + 1];
+      b[0] = -r[0] + (0.5f * m_text.get(0).width());
       for (int i = 1; i < b.length - 2; i++) {
-        b[i] = (0.5f * (mainText.get(i).width() + mainText.get(i - 1).width())) + (r[i - 1] - r[i]);
+        b[i] = (0.5f * (m_text.get(i).width() + m_text.get(i - 1).width())) + (r[i - 1] - r[i]);
       }
       b[b.length - 1] =
-          -lineMax + r[r.length - 1] + (0.5f * mainText.get(mainText.size() - 1).width());
+          -lineMax + r[r.length - 1] + (0.5f * m_text.get(m_text.size() - 1).width());
 
       // Calculate constraint optimization
-      float[] x = new float[mainText.size()];
+      float[] x = new float[m_text.size()];
       for (int i = 0; i < x.length; i++) {
         x[i] = 0.0f;
       }
       QuadraticOptimizer co = new QuadraticOptimizer(a, b);
       co.calculate(x);
       for (int i = 0; i < x.length; i++) {
-        offset.add(x[i] + r[i]);
+        m_offset.add(x[i] + r[i]);
       }
     }
 
     // Draw
     void draw(Canvas canvas, float y) {
       y -= furiganaPaint.descent();
-      if (offset.size() == mainText.size()) {
+      if (m_offset.size() == m_text.size()) {
         // Render with fixed offsets
-        for (int i = 0; i < offset.size(); i++) {
-          mainText.get(i).draw(canvas, offset.get(i), y);
+        for (int i = 0; i < m_offset.size(); i++) {
+          m_text.get(i).draw(canvas, m_offset.get(i), y);
         }
       } else {
         // Render with original offsets
-        for (TextFurigana text : mainText) {
-          text.draw(canvas, text.getOffset(), y);
+        for (TextFurigana text : m_text) {
+          text.draw(canvas, text.offset_get(), y);
         }
       }
     }
@@ -561,22 +567,22 @@ public class FuriganaView extends View {
   class LineNormal {
 
     // Text
-    private Vector<TextNormal> mainText = new Vector<>();
+    private Vector<TextNormal> m_text = new Vector<>();
 
     // Elements
     int size() {
-      return mainText.size();
+      return m_text.size();
     }
 
     void add(Vector<TextNormal> text) {
-      mainText.addAll(text);
+      m_text.addAll(text);
     }
 
     // Draw
     void draw(Canvas canvas, float y) {
       y -= normalTextPaint.descent();
       float x = 0.0f;
-      for (TextNormal text : mainText) {
+      for (TextNormal text : m_text) {
         x += text.draw(canvas, x, y);
       }
     }
@@ -585,119 +591,119 @@ public class FuriganaView extends View {
   class Span {
 
     // Text
-    private TextFurigana furigana = null;
-    private Vector<TextNormal> normal = new Vector<>();
+    private TextFurigana m_furigana = null;
+    private Vector<TextNormal> m_normal = new Vector<>();
 
     // Widths
-    private Vector<Float> widthChars = new Vector<>();
-    private float widthTotal = 0.0f;
+    private Vector<Float> m_width_chars = new Vector<>();
+    private float m_width_total = 0.0f;
 
     // Constructors
-    Span(String furiganaText, String kanjiText, int startHightlight, int endHightlight) {
+    Span(String text_f, String text_k, int startHighlight, int endHighlight) {
       // Furigana text
-      if (furiganaText.length() > 0) {
-        furigana = new TextFurigana(furiganaText);
+      if (text_f.length() > 0) {
+        m_furigana = new TextFurigana(text_f);
       }
 
       // Normal text
-      if (startHightlight < kanjiText.length() && endHightlight > 0 && startHightlight < endHightlight) {
+      if (startHighlight < text_k.length() && endHighlight > 0 && startHighlight < endHighlight) {
 
         // Fix marked bounds
-        startHightlight = Math.max(0, startHightlight);
-        endHightlight = Math.min(kanjiText.length(), endHightlight);
+        startHighlight = Math.max(0, startHighlight);
+        endHighlight = Math.min(text_k.length(), endHighlight);
 
         // Prefix
-        if (startHightlight > 0) {
-          normal.add(new TextNormal(kanjiText.substring(0, startHightlight), false));
+        if (startHighlight > 0) {
+          m_normal.add(new TextNormal(text_k.substring(0, startHighlight), false));
         }
 
         // Marked
-        if (endHightlight > startHightlight) {
-          normal.add(new TextNormal(kanjiText.substring(startHightlight, endHightlight), true));
+        if (endHighlight > startHighlight) {
+          m_normal.add(new TextNormal(text_k.substring(startHighlight, endHighlight), true));
         }
 
         // Postfix
-        if (endHightlight < kanjiText.length()) {
-          normal.add(new TextNormal(kanjiText.substring(endHightlight), false));
+        if (endHighlight < text_k.length()) {
+          m_normal.add(new TextNormal(text_k.substring(endHighlight), false));
         }
 
       } else {
 
         // Non marked
-        normal.add(new TextNormal(kanjiText, false));
+        m_normal.add(new TextNormal(text_k, false));
 
       }
 
       // Widths
-      calculateWidths();
+      widths_calculate();
     }
 
     Span(Vector<TextNormal> normal) {
       // Only normal text
-      normal = normal;
+      m_normal = normal;
 
       // Widths
-      calculateWidths();
+      widths_calculate();
     }
 
     // Text
     TextFurigana furigana(float x) {
-      if (furigana == null) {
+      if (m_furigana == null) {
         return null;
       }
-      furigana.setOffset(x + (widthTotal / 2.0f));
-      return furigana;
+      m_furigana.offset_set(x + (m_width_total / 2.0f));
+      return m_furigana;
     }
 
     Vector<TextNormal> normal() {
-      return normal;
+      return m_normal;
     }
 
     // Widths
     Vector<Float> widths() {
-      return widthChars;
+      return m_width_chars;
     }
 
-    private void calculateWidths() {
+    private void widths_calculate() {
       // Chars
-      if (furigana == null) {
-        for (TextNormal normal : normal) {
-          for (float v : normal.getWidthChars()) {
-            widthChars.add(v);
+      if (m_furigana == null) {
+        for (TextNormal normal : m_normal) {
+          for (float v : normal.width_chars()) {
+            m_width_chars.add(v);
           }
         }
       } else {
         float sum = 0.0f;
-        for (TextNormal normal : normal) {
-          for (float v : normal.getWidthChars()) {
+        for (TextNormal normal : m_normal) {
+          for (float v : normal.width_chars()) {
             sum += v;
           }
         }
-        widthChars.add(sum);
+        m_width_chars.add(sum);
       }
 
       // Total
-      widthTotal = 0.0f;
-      for (float v : widthChars) {
-        widthTotal += v;
+      m_width_total = 0.0f;
+      for (float v : m_width_chars) {
+        m_width_total += v;
       }
     }
 
     // Split
-    void split(int offset, Vector<TextNormal> normalA, Vector<TextNormal> normalB) {
+    void split(int offset, Vector<TextNormal> normal_a, Vector<TextNormal> normal_b) {
       // Check if no furigana
-      assert (furigana == null);
+      assert (m_furigana == null);
 
       // Split normal list
-      for (TextNormal cur : normal) {
+      for (TextNormal cur : m_normal) {
         if (offset <= 0) {
-          normalB.add(cur);
+          normal_b.add(cur);
         } else if (offset >= cur.length()) {
-          normalA.add(cur);
+          normal_a.add(cur);
         } else {
           TextNormal[] split = cur.split(offset);
-          normalA.add(split[0]);
-          normalB.add(split[1]);
+          normal_a.add(split[0]);
+          normal_b.add(split[1]);
         }
         offset -= cur.length();
       }
