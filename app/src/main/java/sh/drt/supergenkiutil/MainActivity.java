@@ -13,13 +13,13 @@ public class MainActivity extends AppCompatActivity {
     setContentView(R.layout.activity_main);
 
     FuriganaView furiganaView = (FuriganaView) findViewById(R.id.furiganaView);
-    furiganaView.setBaseTextSize(50);
+    furiganaView.setBaseTextSize(80);
     furiganaView.setBaseColor(Color.BLUE);
     furiganaView.setFuriganaColor(Color.MAGENTA);
     furiganaView.setHighlightColor(Color.RED);
-    furiganaView.setText("{宇宙飛行士;うちゅうひこうし}はロケットで{宇;う}{宙;ちゅう}に{行;い}った", 6, 10);
+    // furiganaView.setText("{宇宙飛行士;うちゅうひこうし}はロケットで{宇;う}{宙;ちゅう}に{行;い}った", 6, 10);
 
-    // String text = "{彼女;かのじょ}は{寒気;さむけ}を{防;ふせ}ぐために{厚;あつ}いコートを{着;き}ていた。";
-    // furiganaView.setText(text);
+    String text = "{彼女;かのじょ}は{寒気;さむけ}を{防;ふせ}ぐために{厚;あつ}いコートを{着;き}ていた。";
+    furiganaView.setText(text);
   }
 }
