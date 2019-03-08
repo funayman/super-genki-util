@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="FuriganaView">
+        <attr name="baseColor" format="reference"/>
+        <attr name="highlightColor" format="reference"/>
+        <attr name="furiganaColor" format="reference"/>
+        <attr name="baseTextSize" format="dimension"/>
+    </declare-styleable>
+</resources>
